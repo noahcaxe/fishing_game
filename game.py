@@ -15,7 +15,7 @@ BLUE = (47, 30, 199)
 BLACK = (0, 0, 0)
 SHADOW_COLOR = (50, 50, 50)
 
-background = pygame.image.load("D:/workspace/project_for_kumar_nalinaksh/fishing_game/images/background.jpg")
+background = pygame.image.load("images/background.jpg")
 background = pygame.transform.scale(background, (screen_width, screen_height))
 
 font = pygame.font.SysFont("eastmanblack", 20)
