@@ -23,11 +23,11 @@ def draw_button(screen, text, rect, hovered=False, pressed=False):
     DARK_YELLOW = (180, 190, 50)
     SHADOW_COLOR = (50, 50, 50)
 
-    # Размер кнопки при наведении
+    
     if hovered:
         rect = rect.inflate(10, 5)
 
-    # Цвет при нажатии
+    
     color = DARK_YELLOW if pressed else YELLOW
 
     pygame.draw.rect(screen, color, rect, border_radius=10)
@@ -35,6 +35,24 @@ def draw_button(screen, text, rect, hovered=False, pressed=False):
     screen.blit(text_surf, text_surf.get_rect(center=rect.center).move(2, 2))
     text_surf = font.render(text, True, WHITE)
     screen.blit(text_surf, text_surf.get_rect(center=rect.center))
+
+import pygame
+import random
+import os
+
+fullscreen = False  
+volume = 0.5
+
+def load_image(filename):
+    path = os.path.join(os.path.dirname(__file__), filename)
+    if not os.path.exists(path):
+        print(f"Image not found: {path}")
+        return None
+    try:
+        return pygame.image.load(path).convert_alpha()
+    except pygame.error as e:
+        print(f"Error loading image {filename}: {e}")
+        return None
 
 def fishing_game():
     global fullscreen  
@@ -59,6 +77,8 @@ def fishing_game():
     score = 0
     time_limit = 60
     time_start = pygame.time.get_ticks()
+
+    rod_out = False  
 
     background_image = load_image("images/beach_background.png")
     player_img = load_image("images/stickman.png")
@@ -87,24 +107,40 @@ def fishing_game():
     running = True
     while running:
         window.fill(WHITE)
-        fish_hooked = False
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
+                if event.key == pygame.K_SPACE:
+                    rod_out = True
+                    print("🎣 Удочка вытащена!")
+
+                elif event.key == pygame.K_DOWN:
+                    rod_out = False
+                    print("🔽 Удочка убрана!")
+
+                elif event.key == pygame.K_UP and rod_out:
                     rod_x = player_x + (player_width // 2) - (rod_img.get_width() // 2)
                     rod_y = player_y - rod_img.get_height()
-                    rod_rect = pygame.Rect(rod_x, rod_y, rod_img.get_width(), rod_img.get_height())
+
+                    
+                    rod_rect = pygame.Rect(rod_x - 20, rod_y - 20, rod_img.get_width() + 90, rod_img.get_height() + 90)
+
+                    fish_caught = False
                     for fish in fish_list[:]:
                         fish_rect = pygame.Rect(fish[0], fish[1], fish_img.get_width(), fish_img.get_height())
-                        if rod_rect.colliderect(fish_rect):
+
+                        
+                        if rod_rect.colliderect(fish_rect) or abs(fish[0] - rod_x) < 50 and abs(fish[1] - rod_y) < 50:
                             fish_list.remove(fish)
-                            score += 10
-                            fish_hooked = True
-                    if not fish_hooked:
-                        print("Промах!")
+                            score += 1
+                            fish_caught = True
+                            print("🎉 Рыба поймана!")
+
+                    if not fish_caught:
+                        print("❌ Промах!")
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT] and player_x > 0:
@@ -129,7 +165,7 @@ def fishing_game():
             window.blit(background_image, (0, 0))
         if player_img:
             window.blit(player_img, (player_x, player_y))
-        if rod_img:
+        if rod_img and rod_out:
             window.blit(rod_img, (rod_x, rod_y))
 
         for fish in fish_list:
