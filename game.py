@@ -2,8 +2,9 @@ import pygame
 import random
 import os
 
-fullscreen = False  
+fullscreen = False
 volume = 0.5
+
 
 def load_image(filename):
     path = os.path.join(os.path.dirname(__file__), filename)
@@ -16,6 +17,7 @@ def load_image(filename):
         print(f"Error loading image {filename}: {e}")
         return None
 
+
 def draw_button(screen, text, rect, hovered=False, pressed=False):
     font = pygame.font.SysFont("eastmanblack", 20)
     WHITE = (255, 255, 255)
@@ -23,11 +25,9 @@ def draw_button(screen, text, rect, hovered=False, pressed=False):
     DARK_YELLOW = (180, 190, 50)
     SHADOW_COLOR = (50, 50, 50)
 
-    # Размер кнопки при наведении
     if hovered:
         rect = rect.inflate(10, 5)
 
-    # Цвет при нажатии
     color = DARK_YELLOW if pressed else YELLOW
 
     pygame.draw.rect(screen, color, rect, border_radius=10)
@@ -36,8 +36,9 @@ def draw_button(screen, text, rect, hovered=False, pressed=False):
     text_surf = font.render(text, True, WHITE)
     screen.blit(text_surf, text_surf.get_rect(center=rect.center))
 
+
 def fishing_game():
-    global fullscreen  
+    global fullscreen
     pygame.init()
 
     window_width, window_height = 800, 600
@@ -104,7 +105,7 @@ def fishing_game():
                             score += 10
                             fish_hooked = True
                     if not fish_hooked:
-                        print("Промах!")
+                        print("Miss")
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT] and player_x > 0:
@@ -147,6 +148,7 @@ def fishing_game():
 
     pygame.quit()
 
+
 def menu():
     global fullscreen, volume
     pygame.init()
@@ -179,7 +181,7 @@ def menu():
     in_settings = False
 
     dragging_volume = False
-    volume_bar_rect = pygame.Rect(250, 180, 300, 10)
+    volume_bar_rect = pygame.Rect(250, 195, 300, 10)
 
     running = True
     while running:
@@ -233,16 +235,32 @@ def menu():
                 label = f"Fullscreen: {'On' if fullscreen else 'Off'}" if text == "Fullscreen" else "Back to Menu"
                 draw_button(screen, label, rect, hovered, pressed)
 
-            # Volume bar
-            pygame.draw.rect(screen, (180, 180, 180), volume_bar_rect)
-            fill_rect = pygame.Rect(volume_bar_rect.x, volume_bar_rect.y, int(volume * volume_bar_rect.width), volume_bar_rect.height)
-            pygame.draw.rect(screen, (255, 215, 0), fill_rect)
-            pygame.draw.circle(screen, (255, 255, 255), (volume_bar_rect.x + int(volume * volume_bar_rect.width), volume_bar_rect.y + 5), 8)
+            yellow_bg_rect = pygame.Rect(250, 160, 300, 65)
 
-            # Volume label
-            font = pygame.font.SysFont("arial", 24)
-            text = font.render(f"Volume: {int(volume * 100)}%", True, (255, 255, 255))
-            screen.blit(text, (volume_bar_rect.x, volume_bar_rect.y - 30))
+            pygame.draw.rect(screen, (255, 215, 69), yellow_bg_rect, border_radius=10)
+
+            volume_bar_inner_x = yellow_bg_rect.x + 5
+            volume_bar_inner_width = yellow_bg_rect.width - 10
+            volume_bar_rect = pygame.Rect(volume_bar_inner_x, 200, volume_bar_inner_width, 10)
+
+            pygame.draw.rect(screen, (180, 180, 180), volume_bar_rect, border_radius=10)
+            fill_rect = pygame.Rect(volume_bar_rect.x, volume_bar_rect.y, int(volume * volume_bar_rect.width),
+                                    volume_bar_rect.height)
+            pygame.draw.rect(screen, (251, 255, 148), fill_rect, border_radius=10)
+
+            pygame.draw.circle(screen, (255, 255, 255),
+                               (volume_bar_rect.x + int(volume * volume_bar_rect.width), volume_bar_rect.y + 5), 8)
+
+            font = pygame.font.SysFont("eastmanblack", 20)
+            label_text = f"Volume: {int(volume * 100)}%"
+            text_surf_shadow = font.render(label_text, True, (50, 50, 50))
+            text_surf_main = font.render(label_text, True, (255, 255, 255))
+            text_rect = text_surf_main.get_rect(
+                midtop=(yellow_bg_rect.centerx, yellow_bg_rect.y + 10))
+            screen.blit(text_surf_shadow, text_rect.move(2, 2))
+            screen.blit(text_surf_main, text_rect)
+
+
         else:
             for text, rect in buttons.items():
                 hovered = rect.collidepoint(mouse_pos)
@@ -253,4 +271,6 @@ def menu():
         clock.tick(60)
 
     pygame.quit()
+
+
 menu()
