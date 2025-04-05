@@ -53,6 +53,8 @@ def fishing_game():
     player_y = window_height - 120
     player_width, player_height = 100, 120
 
+    rod_enabled = False  # Удочка не активна изначально
+
     fish_list = []
     fish_timer = 0
     FISH_SPAWN_TIME = 100
@@ -63,23 +65,30 @@ def fishing_game():
 
     background_image = load_image("images/beach_background.png")
     player_img = load_image("images/stickman.png")
-    rod_img = load_image("images/rod.png")
+    rod_with_line_img = load_image("images/rod_with_line.png")  # До заброса
+    rod_no_line_img = load_image("images/rod_no_line.png")      # После заброса
+    current_rod_img = rod_with_line_img  # Начинаем с удочкой с леской
+
     fish_img = load_image("images/fish.png")
 
+    # Масштабирование изображений
     if background_image:
         background_image = pygame.transform.scale(background_image, (window_width, window_height))
     if player_img:
         player_img = pygame.transform.scale(player_img, (player_width, player_height))
-    if rod_img:
-        rod_img = pygame.transform.scale(rod_img, (30, 100))
+    if rod_with_line_img:
+        rod_with_line_img = pygame.transform.scale(rod_with_line_img, (40, 100))
+    if rod_no_line_img:
+        rod_no_line_img = pygame.transform.scale(rod_no_line_img, (40, 100))
     if fish_img:
         fish_img = pygame.transform.scale(fish_img, (40, 30))
+    if current_rod_img:
+        current_rod_img = pygame.transform.scale(current_rod_img, (40, 100))
 
     font = pygame.font.Font(None, 36)
 
     def spawn_fish():
-        center_y = window_height // 2
-        fish_y = random.randint(center_y - 25, center_y + 25)
+        fish_y = random.randint(player_y - 200, player_y - 100)
         fish_x = random.choice([-40, window_width + 40])
         direction = 1 if fish_x < 0 else -1
         speed = random.uniform(2, 4) * direction
@@ -93,49 +102,69 @@ def fishing_game():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    rod_x = player_x + (player_width // 2) - (rod_img.get_width() // 2)
-                    rod_y = player_y - rod_img.get_height()
-                    rod_rect = pygame.Rect(rod_x, rod_y, rod_img.get_width(), rod_img.get_height())
+                if event.key == pygame.K_SPACE:
+                    # Переключаем состояние удочки
+                    rod_enabled = not rod_enabled
+                    if rod_enabled:
+                        print("Удочка достана!")
+                        current_rod_img = rod_no_line_img
+                    else:
+                        print("Удочка убрана!")
+                        current_rod_img = rod_with_line_img
+
+                elif event.key == pygame.K_UP and rod_enabled:
+                    rod_x = player_x + (player_width // 2) - (rod_no_line_img.get_width() // 2)
+                    rod_y = player_y - rod_no_line_img.get_height()
+                    rod_rect = pygame.Rect(rod_x, 0, rod_no_line_img.get_width(), rod_y + rod_no_line_img.get_height())
+
                     for fish in fish_list[:]:
                         fish_rect = pygame.Rect(fish[0], fish[1], fish_img.get_width(), fish_img.get_height())
                         if rod_rect.colliderect(fish_rect):
+                            print("Поймал рыбу!")
                             fish_list.remove(fish)
-                            score += 10
+                            score += 1
                             fish_hooked = True
                     if not fish_hooked:
-                        print("Miss")
+                        print("Промах")
 
+        # Движение игрока
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT] and player_x > 0:
             player_x -= 5
         if keys[pygame.K_RIGHT] and player_x < window_width - player_width:
             player_x += 5
 
+        # Спавн рыбы
         fish_timer += 1
         if fish_timer >= FISH_SPAWN_TIME:
             spawn_fish()
             fish_timer = 0
 
+        # Движение рыб
         for fish in fish_list[:]:
             fish[0] += fish[2]
             if fish[0] < -50 or fish[0] > window_width + 50:
                 fish_list.remove(fish)
 
-        rod_x = player_x + (player_width // 2) - (rod_img.get_width() // 2)
-        rod_y = player_y - rod_img.get_height()
+        # Расчёт позиции удочки
+        rod_x = player_x + (player_width // 2) - (current_rod_img.get_width() // 2)
+        rod_y = player_y - current_rod_img.get_height()
+        rod_rect = pygame.Rect(rod_x, 0, current_rod_img.get_width(), rod_y + current_rod_img.get_height())
 
+        # Отрисовка
         if background_image:
             window.blit(background_image, (0, 0))
         if player_img:
             window.blit(player_img, (player_x, player_y))
-        if rod_img:
-            window.blit(rod_img, (rod_x, rod_y))
+        if current_rod_img :
+            window.blit(current_rod_img, (rod_x, rod_y))
 
         for fish in fish_list:
             window.blit(fish_img, (fish[0], fish[1]))
 
+        # UI
         window.blit(font.render(f"Score: {score}", True, BLACK), (10, 10))
         time_remaining = max(0, time_limit - (pygame.time.get_ticks() - time_start) // 1000)
         window.blit(font.render(f"Time: {time_remaining}", True, BLACK), (window_width // 2 - 40, 10))
@@ -147,6 +176,9 @@ def fishing_game():
         clock.tick(60)
 
     pygame.quit()
+
+
+
 
 
 def menu():
