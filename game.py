@@ -5,7 +5,7 @@ import math
 import time
 
 fullscreen = False
-volume = 0.5
+volume = 0.3
 
 
 def load_image(filename):
@@ -43,6 +43,9 @@ def fishing_game():
     global fullscreen
     pygame.init()
     pygame.mixer.init()
+    pygame.mixer.music.load("sounds/game_soundtrack.mp3")
+    pygame.mixer.music.set_volume(volume)
+    pygame.mixer.music.play(-1)  
 
     
     fish_caught_sound = pygame.mixer.Sound("sounds/fish_caught.mp3")
@@ -69,6 +72,7 @@ def fishing_game():
     time_limit = 60
     time_start = pygame.time.get_ticks()
 
+    palms_img = load_image("images/palms.png")
     background_image = load_image("images/beach_background.png")
     player_img = load_image("images/stickman.png")
     player_caught_img = load_image("images/stickman_caught_fish.png")
@@ -78,7 +82,10 @@ def fishing_game():
     rod_invisible_img = load_image("images/rod_invisible.png")
     golden_fish_img = load_image("images/golden_fish.png")
     background_image_blurred = load_image("images/beach_background_blurred.png")
+    
 
+    if palms_img:
+        palms_img = pygame.transform.scale(palms_img, (window_width, window_height))
     if background_image:
         background_image = pygame.transform.scale(background_image, (window_width, window_height))
     if player_img:
@@ -97,7 +104,7 @@ def fishing_game():
         golden_fish_img = pygame.transform.scale(golden_fish_img, (40, 30))
     if background_image_blurred:
         background_image_blurred = pygame.transform.scale(background_image_blurred, (window_width, window_height))
-
+    
     
     current_rod_img = rod_with_line_img
     font = pygame.font.Font(None, 36)
@@ -134,6 +141,7 @@ def fishing_game():
         ])
     running = True
     while running:
+        
         window.fill(WHITE)
         fish_hooked = False
         current_time = pygame.time.get_ticks()
@@ -148,6 +156,9 @@ def fishing_game():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                    menu()
                 if event.key == pygame.K_SPACE:
                     if current_time >= cooldown_timer:
                         rod_enabled = not rod_enabled
@@ -216,10 +227,11 @@ def fishing_game():
         
         window.fill(WHITE)
 
-   
-
         if background_image:
             window.blit(background_image, (0, 0))
+
+        
+        
 
         if pygame.time.get_ticks() < caught_fish_timer:
             img = player_caught_img
@@ -229,6 +241,7 @@ def fishing_game():
 
         if not facing_right:
             img = pygame.transform.flip(img, True, False)
+
 
         window.blit(img, (player_x, player_y))
         rod_img_to_draw = pygame.transform.flip(current_rod_img, True, False) if not facing_right else current_rod_img
@@ -249,6 +262,8 @@ def fishing_game():
         rod_draw_x = player_x + 25
         rod_draw_y = 450
 
+        if palms_img:
+            window.blit(palms_img, (0, 0))
         if current_time < cooldown_timer:
             cooldown_progress = (cooldown_timer - current_time) / 3500
             bar_width = 100
@@ -284,18 +299,18 @@ def fishing_game():
                 window.blit(title_shadow, (title_rect.x + 2, title_rect.y + 2))
                 window.blit(title_main, title_rect)
 
-                # Кнопки
+                
                 pygame.draw.rect(window, YELLOW, play_again_rect, border_radius=12)
                 pygame.draw.rect(window, YELLOW, menu_rect, border_radius=12)
 
-                # Тень для "Play again"
+                
                 play_text_shadow = button_font.render("Play again", True, BLACK)
                 play_text = button_font.render("Play again", True, WHITE)
                 play_rect = play_text.get_rect(center=play_again_rect.center)
                 window.blit(play_text_shadow, (play_rect.x + 2, play_rect.y + 2))
                 window.blit(play_text, play_rect)
 
-                # Тень для "Menu"
+                
                 menu_text_shadow = button_font.render("Menu", True, BLACK)
                 menu_text = button_font.render("Menu", True, WHITE)
                 menu_rect_text = menu_text.get_rect(center=menu_rect.center)
@@ -309,10 +324,10 @@ def fishing_game():
                     elif event.type == pygame.MOUSEBUTTONDOWN:
                         if play_again_rect.collidepoint(event.pos):
                             waiting = False
-                            fishing_game()  # запустить заново
+                            fishing_game()  
                         elif menu_rect.collidepoint(event.pos):
                             waiting = False
-                            menu()  # вернуться в меню
+                            menu()  
 
                 pygame.display.update()
 
@@ -389,7 +404,7 @@ def menu():
                             button_pressed_time = current_time
                             if text == "Fullscreen":
                                 click_sound.play()
-                                fullscreen = not fullscreen
+                                
                                 screen = create_window()
                                 if background:
                                     background = pygame.transform.scale(background, (screen_width, screen_height))
