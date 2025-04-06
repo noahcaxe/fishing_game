@@ -66,7 +66,7 @@ def fishing_game():
     background_image = load_image("images/beach_background.png")
     player_img = load_image("images/stickman.png")
     rod_with_line_img = load_image("images/rod_with_line.png")  # До заброса
-    rod_no_line_img = load_image("images/rod_no_line.png")      # После заброса
+    rod_no_line_img = load_image("images/rod_no_line.png")  # После заброса
     current_rod_img = rod_with_line_img  # Начинаем с удочкой с леской
 
     fish_img = load_image("images/fish.png")
@@ -294,6 +294,17 @@ def menu():
 
 
         else:
+            fishingman_img = load_image("images/fishingman.png")
+            table_img = load_image("images/table.png")
+
+            if table_img:
+                table_img = pygame.transform.scale(table_img, (235, 235))
+                screen.blit(table_img, (285, 0))
+
+            if fishingman_img:
+                fishingman_img = pygame.transform.scale(fishingman_img, (150, 150))
+                screen.blit(fishingman_img, (320, 420))
+
             for text, rect in buttons.items():
                 hovered = rect.collidepoint(mouse_pos)
                 pressed = button_pressed == text and current_time - button_pressed_time < click_animation_duration
