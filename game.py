@@ -2,6 +2,7 @@ import pygame
 import random
 import os
 import math
+import time
 
 fullscreen = False
 volume = 0.5
@@ -76,6 +77,7 @@ def fishing_game():
     fish_img = load_image("images/fish.png")
     rod_invisible_img = load_image("images/rod_invisible.png")
     golden_fish_img = load_image("images/golden_fish.png")
+    background_image_blurred = load_image("images/beach_background_blurred.png")
 
     if background_image:
         background_image = pygame.transform.scale(background_image, (window_width, window_height))
@@ -93,6 +95,9 @@ def fishing_game():
         rod_invisible_img = pygame.transform.scale(rod_invisible_img, (player_width, player_height))
     if golden_fish_img:
         golden_fish_img = pygame.transform.scale(golden_fish_img, (40, 30))
+    if background_image_blurred:
+        background_image_blurred = pygame.transform.scale(background_image_blurred, (window_width, window_height))
+
     
     current_rod_img = rod_with_line_img
     font = pygame.font.Font(None, 36)
@@ -257,9 +262,64 @@ def fishing_game():
         clock.tick(60)
         pygame.display.update()
 
+        def show_game_over_screen(window, window_width, window_height, font, score):
+            YELLOW = (255, 215, 69)
+            BLACK = (0, 0, 0)
+            WHITE = (255, 255, 255)
+
+            button_font = pygame.font.SysFont("eastmanblack", 36)
+            title_font = pygame.font.SysFont("eastmanblack", 64)
+
+            play_again_rect = pygame.Rect(window_width // 2 - 150, window_height // 2 + 40, 300, 60)
+            menu_rect = pygame.Rect(window_width // 2 - 150, window_height // 2 + 120, 300, 60)
+
+            waiting = True
+            while waiting:
+                window.blit(background_image_blurred, (0, 0))
+
+                title_text = f"Points scored: {score}"
+                title_shadow = title_font.render(title_text, True, BLACK)
+                title_main = title_font.render(title_text, True, WHITE)
+                title_rect = title_main.get_rect(center=(window_width // 2, window_height // 2 - 60))
+                window.blit(title_shadow, (title_rect.x + 2, title_rect.y + 2))
+                window.blit(title_main, title_rect)
+
+                # Кнопки
+                pygame.draw.rect(window, YELLOW, play_again_rect, border_radius=12)
+                pygame.draw.rect(window, YELLOW, menu_rect, border_radius=12)
+
+                # Тень для "Play again"
+                play_text_shadow = button_font.render("Play again", True, BLACK)
+                play_text = button_font.render("Play again", True, WHITE)
+                play_rect = play_text.get_rect(center=play_again_rect.center)
+                window.blit(play_text_shadow, (play_rect.x + 2, play_rect.y + 2))
+                window.blit(play_text, play_rect)
+
+                # Тень для "Menu"
+                menu_text_shadow = button_font.render("Menu", True, BLACK)
+                menu_text = button_font.render("Menu", True, WHITE)
+                menu_rect_text = menu_text.get_rect(center=menu_rect.center)
+                window.blit(menu_text_shadow, (menu_rect_text.x + 2, menu_rect_text.y + 2))
+                window.blit(menu_text, menu_rect_text)
+
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        exit()
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if play_again_rect.collidepoint(event.pos):
+                            waiting = False
+                            fishing_game()  # запустить заново
+                        elif menu_rect.collidepoint(event.pos):
+                            waiting = False
+                            menu()  # вернуться в меню
+
+                pygame.display.update()
+
         if time_remaining <= 0:
             running = False
-            menu()
+            show_game_over_screen(window, window_width, window_height, font, score)
+
 
     pygame.quit()
 
@@ -322,18 +382,19 @@ def menu():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                click_sound.play()
                 if in_settings:
                     for text, rect in settings_buttons.items():
                         if rect.collidepoint(event.pos):
                             button_pressed = text
                             button_pressed_time = current_time
                             if text == "Fullscreen":
+                                click_sound.play()
                                 fullscreen = not fullscreen
                                 screen = create_window()
                                 if background:
                                     background = pygame.transform.scale(background, (screen_width, screen_height))
                             elif text == "Back":
+                                click_sound.play()
                                 in_settings = False
                     if volume_bar_rect.collidepoint(event.pos):
                         dragging_volume = True
@@ -343,12 +404,15 @@ def menu():
                             button_pressed = text
                             button_pressed_time = current_time
                             if text == "Exit":
+                                click_sound.play()
                                 running = False
                             elif text == "Start":
+                                click_sound.play()
                                 pygame.mixer.music.stop()
                                 fishing_game()
                                 pygame.mixer.music.play(-1)
                             elif text == "Settings":
+                                click_sound.play()
                                 in_settings = True
                 if in_settings:
                     for text, rect in settings_buttons.items():
@@ -356,13 +420,16 @@ def menu():
                             button_pressed = text
                             button_pressed_time = current_time
                             if text == "Fullscreen":
+                                click_sound.play()
                                 fullscreen = not fullscreen
                                 screen = create_window()
                                 if background:
                                     background = pygame.transform.scale(background, (screen_width, screen_height))
                             elif text == "Back":
+                                click_sound.play()
                                 in_settings = False
                     if volume_bar_rect.collidepoint(event.pos):
+                        click_sound.play()
                         dragging_volume = True
                 else:
                     for text, rect in buttons.items():
@@ -370,6 +437,8 @@ def menu():
                             button_pressed = text
                             button_pressed_time = current_time
                             if text == "Exit":
+                                click_sound.play()
+                                time.sleep(0.1)
                                 running = False
                             elif text == "Start":
                                 pygame.mixer.music.stop()
