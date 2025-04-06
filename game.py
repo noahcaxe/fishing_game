@@ -1,6 +1,7 @@
 import pygame
 import random
 import os
+import math
 
 fullscreen = False
 volume = 0.5
@@ -63,7 +64,6 @@ def fishing_game():
     time_limit = 60
     time_start = pygame.time.get_ticks()
 
-    # Load images
     background_image = load_image("images/beach_background.png")
     player_img = load_image("images/stickman.png")
     player_caught_img = load_image("images/stickman_caught_fish.png")
@@ -72,6 +72,7 @@ def fishing_game():
     fish_img = load_image("images/fish.png")
     rod_invisible_img = load_image("images/rod_invisible.png")
     doroga_img = load_image("images/doroga.png")
+    golden_fish_img = load_image("images/golden_fish.png")
 
     if background_image:
         background_image = pygame.transform.scale(background_image, (window_width, window_height))
@@ -87,13 +88,12 @@ def fishing_game():
         fish_img = pygame.transform.scale(fish_img, (40, 30))
     if rod_invisible_img:
         rod_invisible_img = pygame.transform.scale(rod_invisible_img, (player_width, player_height))
+    if golden_fish_img:
+        golden_fish_img = pygame.transform.scale(golden_fish_img, (40, 30))
     
-
     current_rod_img = rod_with_line_img
-
     font = pygame.font.Font(None, 36)
 
-    # Direction and timers
     facing_right = True
     caught_fish_timer = 0
     CAUGHT_DISPLAY_TIME = 1000
@@ -103,12 +103,19 @@ def fishing_game():
         fish_y = random.randint(player_y - 200, player_y - 100)
         fish_x = random.choice([-40, window_width + 40])
         direction = 1 if fish_x < 0 else -1
-        speed = random.uniform(2, 4) * direction
-        fish_list.append([fish_x, fish_y, speed])
-        
+        scale = random.uniform(0.5, 1.5)
 
-# Отрисовка рыбы
-    
+        # Скорость зависит от размера: маленькие = быстрее
+        base_speed = random.uniform(2, 3)
+        speed = base_speed / scale * direction
+
+        # Золотая рыба: редкость 1 к 6
+        is_golden = random.randint(1, 6) == 1
+        if is_golden:
+            scale *= 1.5  # увеличим размер
+            speed *= 0.7  # сделаем её медленнее
+
+        fish_list.append([fish_x, fish_y, speed, scale, is_golden])
 
     running = True
     while running:
@@ -116,9 +123,6 @@ def fishing_game():
         fish_hooked = False
         current_time = pygame.time.get_ticks()
 
-        
-
-        # Rod status based on cooldown
         if current_time < cooldown_timer:
             rod_enabled = False
             current_rod_img = rod_with_line_img
@@ -142,26 +146,16 @@ def fishing_game():
                     rod_y = player_y
                     rod_rect = pygame.Rect(rod_x, 0, rod_no_line_img.get_width(), rod_y + rod_no_line_img.get_height())
                     
-                    
-                    for fish in fish_list:
-                        fish_x, fish_y, fish_speed = fish
-                        
-                        # Отзеркалить рыбу в зависимости от направления
-                        if fish_speed < 0:
-                            fish_img_flipped = pygame.transform.flip(fish_img, True, False)
-                        else:
-                            fish_img_flipped = fish_img
-
-                        # Отображаем рыбу
-                        window.blit(fish_img_flipped, (fish_x, fish_y))
-                
                     for fish in fish_list[:]:
-                        
-                        fish_rect = pygame.Rect(fish[0], fish[1], fish_img.get_width(), fish_img.get_height())
+                        fish_rect = pygame.Rect(fish[0], fish[1], fish_img.get_width() * fish[3], fish_img.get_height() * fish[3])
                         if rod_rect.colliderect(fish_rect):
                             print("Поймал рыбу!")
                             fish_list.remove(fish)
-                            score += 1
+                            score_gain = int(1 + fish[3] * 2)
+                            if fish[4]:
+                                score_gain += 5
+                            score += score_gain
+                            print(f"Поймал {'золотую' if fish[4] else 'обычную'} рыбу! +{score_gain} очков")
                             fish_hooked = True
                             caught_fish_timer = pygame.time.get_ticks() + CAUGHT_DISPLAY_TIME
 
@@ -178,23 +172,33 @@ def fishing_game():
             player_x += 5
             facing_right = True
 
-        # Fish spawn logic
         fish_timer += 1
         if fish_timer >= FISH_SPAWN_TIME:
             spawn_fish()
             fish_timer = 0
 
-        # Move fish
         for fish in fish_list[:]:
             fish[0] += fish[2]
             if fish[0] < -50 or fish[0] > window_width + 50:
                 fish_list.remove(fish)
 
-        # Draw background
+        # --- AI: рыбы убегают от удочки ---
+        if rod_enabled:
+            rod_center_x = player_x + player_width // 2 + 15
+            rod_center_y = player_y - current_rod_img.get_height() - 40
+
+            for fish in fish_list:
+                dx = fish[0] - rod_center_x
+                dy = fish[1] - rod_center_y
+                distance = math.hypot(dx, dy)
+
+                if distance < 100:
+                    if (fish[2] > 0 and fish[0] < rod_center_x) or (fish[2] < 0 and fish[0] > rod_center_x):
+                        fish[2] *= -1
+
         if background_image:
             window.blit(background_image, (0, 0))
 
-        # Draw player
         if pygame.time.get_ticks() < caught_fish_timer:
             img = player_caught_img
             current_rod_img = rod_invisible_img
@@ -206,36 +210,46 @@ def fishing_game():
 
         window.blit(img, (player_x, player_y))
 
-        # Draw rod with flip
         rod_img_to_draw = current_rod_img
         if not facing_right:
             rod_img_to_draw = pygame.transform.flip(current_rod_img, True, False)
 
-        rod_x = player_x + (player_width // 2) - (rod_img_to_draw.get_width() // 2)
-        rod_y = player_y - rod_img_to_draw.get_height()
-        window.blit(rod_img_to_draw, (rod_x+25, 450))
+        rod_draw_x = player_x + (player_width // 2) - (rod_img_to_draw.get_width() // 2)
+        rod_draw_y = player_y - rod_img_to_draw.get_height()
+        window.blit(rod_img_to_draw, (rod_draw_x+25, 450))
 
-        # Draw fish
+        
+
+       
         for fish in fish_list:
-            window.blit(fish_img, (fish[0], fish[1]))
+            scale = fish[3]
+            is_golden = fish[4]
+            image = golden_fish_img if is_golden else fish_img
 
-        # Draw HUD
+           
+            scaled_fish_img = pygame.transform.scale(image, (int(image.get_width() * scale), int(image.get_height() * scale)))
+
+           
+            if fish[2] < 0:
+                scaled_fish_img = pygame.transform.flip(scaled_fish_img, True, False)
+
+    
+            window.blit(scaled_fish_img, (fish[0], fish[1]))
+
         window.blit(font.render(f"Score: {score}", True, BLACK), (10, 10))
         time_remaining = max(0, time_limit - (pygame.time.get_ticks() - time_start) // 1000)
         window.blit(font.render(f"Time: {time_remaining}", True, BLACK), (window_width // 2 - 40, 10))
 
-        # Cooldown bar
         if current_time < cooldown_timer:
             cooldown_progress = (cooldown_timer - current_time) / 3500
             bar_width = 100
             bar_height = 10
-            bar_x = rod_x  + (player_width // 2) - (bar_width // 2) + 20
-            bar_y = rod_y + 100
+            bar_x = rod_draw_x + (player_width // 2) - (bar_width // 2) + 20
+            bar_y = rod_draw_y + 100
 
             pygame.draw.rect(window, (50, 50, 50), (bar_x, bar_y, bar_width, bar_height), border_radius=3)
             pygame.draw.rect(window, (255, 50, 50), (bar_x, bar_y, bar_width * cooldown_progress, bar_height), border_radius=3)
             pygame.draw.rect(window, (0, 0, 0), (bar_x, bar_y, bar_width, bar_height), 2, border_radius=3)
-        
 
         clock.tick(60)
         pygame.display.update()
@@ -243,7 +257,7 @@ def fishing_game():
         if time_remaining <= 0:
             print("Время вышло!")
             running = False
-            menu()
+            menu() 
 
     pygame.quit()
 
@@ -364,6 +378,17 @@ def menu():
 
 
         else:
+            fishingman_img = load_image("images/fishingman.png")
+            table_img = load_image("images/table.png")
+
+            if table_img:
+                table_img = pygame.transform.scale(table_img, (235, 235))
+                screen.blit(table_img, (285, 0))
+
+            if fishingman_img:
+                fishingman_img = pygame.transform.scale(fishingman_img, (150, 150))
+                screen.blit(fishingman_img, (320, 420))
+
             for text, rect in buttons.items():
                 hovered = rect.collidepoint(mouse_pos)
                 pressed = button_pressed == text and current_time - button_pressed_time < click_animation_duration
